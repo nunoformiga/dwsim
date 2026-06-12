@@ -31,7 +31,8 @@ Start from DWSIM's existing electrolyte/Reaktoro infrastructure:
 - IdealElectrolytePropertyPackage / ElectrolyteBasePropertyPackage only where the species and parameters are adequate
 
 The predictive model should use ionic species and solids instead of neutral
-apparent components where the DWSIM/Reaktoro data support it:
+apparent components where the DWSIM/Reaktoro data support it. The following
+species are minimum MDH coverage, not a closed list:
 
 - H2O
 - Na+
@@ -44,6 +45,10 @@ apparent components where the DWSIM/Reaktoro data support it:
 - MgSO4(aq)
 - NaSO4-
 - Mg(OH)2(s)
+
+Reusable model setup must derive the admissible aqueous, gaseous, liquid, and
+mineral species from the selected elements/components and the active Reaktoro
+database. Do not hard-code an exclusive MDH-only species universe.
 
 ## Current Reaktoro Work
 
