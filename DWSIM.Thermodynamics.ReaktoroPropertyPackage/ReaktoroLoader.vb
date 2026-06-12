@@ -6,6 +6,8 @@ Public Class ReaktoroLoader
 
     Public Shared Function Initialize() As String
 
+        Dim assemblyPath = Path.GetDirectoryName(Reflection.Assembly.GetExecutingAssembly().Location)
+
         If Settings.RunningPlatform() = Settings.Platform.Windows Then
 
             Dim pyver = PythonEngine.Version
@@ -13,17 +15,17 @@ Public Class ReaktoroLoader
             Dim libpath = "", dllpath, shareddllpath As String
 
             If pyver.Contains("3.7.") Then
-                libpath = Path.Combine(Path.GetDirectoryName(Reflection.Assembly.GetExecutingAssembly().Location), "python_packages", "reaktoro_py37")
+                libpath = Path.Combine(assemblyPath, "python_packages", "reaktoro_py37")
             ElseIf pyver.Contains("3.8.") Then
-                libpath = Path.Combine(Path.GetDirectoryName(Reflection.Assembly.GetExecutingAssembly().Location), "python_packages", "reaktoro_py38")
+                libpath = Path.Combine(assemblyPath, "python_packages", "reaktoro_py38")
             ElseIf pyver.Contains("3.9.") Then
-                libpath = Path.Combine(Path.GetDirectoryName(Reflection.Assembly.GetExecutingAssembly().Location), "python_packages", "reaktoro_py39")
+                libpath = Path.Combine(assemblyPath, "python_packages", "reaktoro_py39")
             Else
                 Throw New Exception("Reaktoro requires a Python distribution version between 3.7 and 3.9 (inclusive). Found version " & pyver)
             End If
 
             dllpath = Path.Combine(libpath, "reaktoro")
-            shareddllpath = Path.Combine(Path.GetDirectoryName(Reflection.Assembly.GetExecutingAssembly().Location), "python_packages", "reaktoro_shared")
+            shareddllpath = Path.Combine(assemblyPath, "python_packages", "reaktoro_shared")
 
             Dim append As String = Settings.PythonPath + ";" + Path.Combine(Settings.PythonPath, "Library", "bin") +
                     ";" + dllpath + ";" + shareddllpath + ";"
@@ -35,6 +37,17 @@ Public Class ReaktoroLoader
             Return libpath
 
         Else
+
+            Dim pyver = PythonEngine.Version
+            Dim candidates As New List(Of String)
+
+            If pyver.Contains("3.7.") Then candidates.Add(Path.Combine(assemblyPath, "python_packages", "reaktoro_py37"))
+            If pyver.Contains("3.8.") Then candidates.Add(Path.Combine(assemblyPath, "python_packages", "reaktoro_py38"))
+            If pyver.Contains("3.9.") Then candidates.Add(Path.Combine(assemblyPath, "python_packages", "reaktoro_py39"))
+
+            For Each libpath In candidates
+                If Directory.Exists(Path.Combine(libpath, "reaktoro")) Then Return libpath
+            Next
 
             Return ""
 

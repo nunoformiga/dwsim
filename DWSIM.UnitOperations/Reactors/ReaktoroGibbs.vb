@@ -140,15 +140,7 @@ Namespace Reactors
 
         Public Overrides Sub Calculate(Optional ByVal args As Object = Nothing)
 
-            If Settings.RunningPlatform() = Settings.Platform.Windows Then
-
-                DWSIM.GlobalSettings.Settings.InitializePythonEnvironment()
-
-            Else
-
-                Throw New Exception("This Unit Operation is not available on Linux/macOS.")
-
-            End If
+            DWSIM.GlobalSettings.Settings.InitializePythonEnvironment()
 
             Dim libpath = DWSIM.Thermodynamics.ReaktoroPropertyPackage.ReaktoroLoader.Initialize()
 
@@ -169,13 +161,20 @@ Namespace Reactors
                     Dim dllpath = Path.Combine(libpath, "reaktoro")
                     Dim shareddllpath = Path.Combine(Path.GetDirectoryName(Reflection.Assembly.GetExecutingAssembly().Location), "python_packages", "reaktoro_shared")
 
-                    os.add_dll_directory(dllpath)
-                    os.add_dll_directory(shareddllpath)
-                    os.add_dll_directory(Settings.PythonPath)
+                    If Settings.RunningPlatform() = Settings.Platform.Windows Then
+                        os.add_dll_directory(dllpath)
+                        os.add_dll_directory(shareddllpath)
+                        os.add_dll_directory(Settings.PythonPath)
+                    End If
 
                 End If
 
-                Dim reaktoro As Object = Py.Import("reaktoro")
+                Dim reaktoro As Object
+                Try
+                    reaktoro = Py.Import("reaktoro")
+                Catch ex As Exception
+                    Throw New Exception("Reaktoro Python module/runtime was not found. Install or bundle a compatible Reaktoro runtime and configure DWSIM's Python path before using Gibbs Reactor (Reaktoro).", ex)
+                End Try
 
                 'Initialize a thermodynamic database
 
@@ -613,11 +612,7 @@ Namespace Reactors
 
         Public Function GetListOfCompounds() As String
 
-            If Settings.RunningPlatform() = Settings.Platform.Windows Then
-
-                DWSIM.GlobalSettings.Settings.InitializePythonEnvironment()
-
-            End If
+            DWSIM.GlobalSettings.Settings.InitializePythonEnvironment()
 
             Dim libpath = DWSIM.Thermodynamics.ReaktoroPropertyPackage.ReaktoroLoader.Initialize()
 
@@ -633,13 +628,20 @@ Namespace Reactors
                     Dim dllpath = Path.Combine(libpath, "reaktoro")
                     Dim shareddllpath = Path.Combine(Path.GetDirectoryName(Reflection.Assembly.GetExecutingAssembly().Location), "python_packages", "reaktoro_shared")
 
-                    os.add_dll_directory(dllpath)
-                    os.add_dll_directory(shareddllpath)
-                    os.add_dll_directory(Settings.PythonPath)
+                    If Settings.RunningPlatform() = Settings.Platform.Windows Then
+                        os.add_dll_directory(dllpath)
+                        os.add_dll_directory(shareddllpath)
+                        os.add_dll_directory(Settings.PythonPath)
+                    End If
 
                 End If
 
-                Dim reaktoro As Object = Py.Import("reaktoro")
+                Dim reaktoro As Object
+                Try
+                    reaktoro = Py.Import("reaktoro")
+                Catch ex As Exception
+                    Throw New Exception("Reaktoro Python module/runtime was not found. Install or bundle a compatible Reaktoro runtime and configure DWSIM's Python path before using Gibbs Reactor (Reaktoro).", ex)
+                End Try
 
                 'Initialize a thermodynamic database
                 Dim db As Object = Nothing

@@ -45,6 +45,15 @@ apparent components where the DWSIM/Reaktoro data support it:
 - NaSO4-
 - Mg(OH)2(s)
 
+## Current Reaktoro Work
+
+The fork removes the hard Linux/macOS block from Gibbs Reactor (Reaktoro) and
+lets Reaktoro-backed calculations use either a bundled Reaktoro package or a
+configured system Python package. This does not create a predictive MDH model
+by itself: the runtime must exist, and R-101 still needs an explicit
+Reaktoro species map, mineral phase selection, and validation against
+measured chemistry.
+
 ## Validation Rule
 
 The current MDH project can remain the regression harness, but validation must

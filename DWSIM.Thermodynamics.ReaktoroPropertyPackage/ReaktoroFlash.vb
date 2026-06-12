@@ -152,26 +152,33 @@ Imports DWSIM.GlobalSettings
 
         Dim ex0 As Exception = Nothing
 
-        Dim sys As Object = Py.Import("sys")
-
-        If libpath <> "" Then
-
-            sys.path.append(libpath)
-
-            Dim os As Object = Py.Import("os")
-
-            Dim dllpath = Path.Combine(libpath, "reaktoro")
-            Dim shareddllpath = Path.Combine(Path.GetDirectoryName(Reflection.Assembly.GetExecutingAssembly().Location), "python_packages", "reaktoro_shared")
-
-            os.add_dll_directory(dllpath)
-            os.add_dll_directory(shareddllpath)
-            os.add_dll_directory(Settings.PythonPath)
-
-        End If
-
         Try
 
-            Dim reaktoro As Object = Py.Import("reaktoro")
+            Dim sys As Object = Py.Import("sys")
+
+            If libpath <> "" Then
+
+                sys.path.append(libpath)
+
+                Dim os As Object = Py.Import("os")
+
+                Dim dllpath = Path.Combine(libpath, "reaktoro")
+                Dim shareddllpath = Path.Combine(Path.GetDirectoryName(Reflection.Assembly.GetExecutingAssembly().Location), "python_packages", "reaktoro_shared")
+
+                If Settings.RunningPlatform() = Settings.Platform.Windows Then
+                    os.add_dll_directory(dllpath)
+                    os.add_dll_directory(shareddllpath)
+                    os.add_dll_directory(Settings.PythonPath)
+                End If
+
+            End If
+
+            Dim reaktoro As Object
+            Try
+                reaktoro = Py.Import("reaktoro")
+            Catch ex As Exception
+                Throw New Exception("Reaktoro Python module/runtime was not found. Install or bundle a compatible Reaktoro runtime and configure DWSIM's Python path before using the Reaktoro flash algorithm.", ex)
+            End Try
 
             'Initialize a thermodynamic database
             Dim db = reaktoro.Database("supcrt07-organics.xml")
@@ -614,9 +621,7 @@ Imports DWSIM.GlobalSettings
             End If
         Next
 
-        Dim ppath As String = Path.Combine(Path.GetDirectoryName(Reflection.Assembly.GetExecutingAssembly().Location), "reaktoro_python")
-
-        Settings.InitializePythonEnvironment(ppath)
+        Settings.InitializePythonEnvironment()
 
         Dim speciesPhases As New Dictionary(Of String, String)
         Dim speciesAmounts As New Dictionary(Of String, Double)
@@ -644,43 +649,68 @@ Imports DWSIM.GlobalSettings
         Next
         aqueous = aqueous.TrimEnd()
         gaseous = gaseous.TrimEnd()
+
+        Dim libpath = ReaktoroLoader.Initialize()
+
         Dim pystate = Py.GIL()
 
         Dim ex0 As Exception = Nothing
 
-        Dim sys As Object = Py.Import("sys")
-
-        Dim codeToRedirectOutput As String = "import sys" & Environment.NewLine + "from io import BytesIO as StringIO" & Environment.NewLine + "sys.stdout = mystdout = StringIO()" & Environment.NewLine + "sys.stdout.flush()" & Environment.NewLine + "sys.stderr = mystderr = StringIO()" & Environment.NewLine + "sys.stderr.flush()"
-
-        PythonEngine.RunSimpleString(codeToRedirectOutput)
-
-        Dim reaktoro As Object = Py.Import("reaktoro")
-
-        'Initialize a thermodynamic database
-        Dim db = reaktoro.Database("supcrt07-organics.xml")
-
-        'Define the chemical system
-        Dim editor = reaktoro.ChemicalEditor(db)
-
-        Dim aqueousPhase = editor.addAqueousPhase(aqueous)
-
-        aqueousPhase.setChemicalModelHKF()
-        aqueousPhase.setActivityModelDrummondCO2()
-        'i = 0
-        'For Each na In names
-        '    If CompoundMaps.Maps(na).AqueousName <> "" And na <> "Water" And
-        '            Not CompoundProperties(i).IsIon And Not CompoundProperties(i).IsSalt Then
-        '        aqueousPhase.setActivityModelSetschenow(CompoundMaps.Maps(na).AqueousName, Setschenow.GetValue(na))
-        '    End If
-        '    i += 1
-        'Next
-
-        editor.addGaseousPhase(gaseous)
-
-        'Construct the chemical system
-        Dim mySystem = reaktoro.ChemicalSystem(editor)
-
         Try
+
+            Dim sys As Object = Py.Import("sys")
+
+            If libpath <> "" Then
+
+                sys.path.append(libpath)
+
+                Dim os As Object = Py.Import("os")
+
+                Dim dllpath = Path.Combine(libpath, "reaktoro")
+                Dim shareddllpath = Path.Combine(Path.GetDirectoryName(Reflection.Assembly.GetExecutingAssembly().Location), "python_packages", "reaktoro_shared")
+
+                If Settings.RunningPlatform() = Settings.Platform.Windows Then
+                    os.add_dll_directory(dllpath)
+                    os.add_dll_directory(shareddllpath)
+                    os.add_dll_directory(Settings.PythonPath)
+                End If
+
+            End If
+
+            Dim codeToRedirectOutput As String = "import sys" & Environment.NewLine + "from io import BytesIO as StringIO" & Environment.NewLine + "sys.stdout = mystdout = StringIO()" & Environment.NewLine + "sys.stdout.flush()" & Environment.NewLine + "sys.stderr = mystderr = StringIO()" & Environment.NewLine + "sys.stderr.flush()"
+
+            PythonEngine.RunSimpleString(codeToRedirectOutput)
+
+            Dim reaktoro As Object
+            Try
+                reaktoro = Py.Import("reaktoro")
+            Catch ex As Exception
+                Throw New Exception("Reaktoro Python module/runtime was not found. Install or bundle a compatible Reaktoro runtime and configure DWSIM's Python path before using the Reaktoro flash algorithm.", ex)
+            End Try
+
+            'Initialize a thermodynamic database
+            Dim db = reaktoro.Database("supcrt07-organics.xml")
+
+            'Define the chemical system
+            Dim editor = reaktoro.ChemicalEditor(db)
+
+            Dim aqueousPhase = editor.addAqueousPhase(aqueous)
+
+            aqueousPhase.setChemicalModelHKF()
+            aqueousPhase.setActivityModelDrummondCO2()
+            'i = 0
+            'For Each na In names
+            '    If CompoundMaps.Maps(na).AqueousName <> "" And na <> "Water" And
+            '            Not CompoundProperties(i).IsIon And Not CompoundProperties(i).IsSalt Then
+            '        aqueousPhase.setActivityModelSetschenow(CompoundMaps.Maps(na).AqueousName, Setschenow.GetValue(na))
+            '    End If
+            '    i += 1
+            'Next
+
+            editor.addGaseousPhase(gaseous)
+
+            'Construct the chemical system
+            Dim mySystem = reaktoro.ChemicalSystem(editor)
 
             If T = 0.0 Then T = 298.15
 

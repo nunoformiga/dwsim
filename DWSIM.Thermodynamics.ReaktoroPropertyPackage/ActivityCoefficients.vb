@@ -83,13 +83,20 @@ Public Class ActivityCoefficients
                 Dim dllpath = Path.Combine(libpath, "reaktoro")
                 Dim shareddllpath = Path.Combine(Path.GetDirectoryName(Reflection.Assembly.GetExecutingAssembly().Location), "python_packages", "reaktoro_shared")
 
-                os.add_dll_directory(dllpath)
-                os.add_dll_directory(shareddllpath)
-                os.add_dll_directory(Settings.PythonPath)
+                If Settings.RunningPlatform() = Settings.Platform.Windows Then
+                    os.add_dll_directory(dllpath)
+                    os.add_dll_directory(shareddllpath)
+                    os.add_dll_directory(Settings.PythonPath)
+                End If
 
             End If
 
-            Dim reaktoro As Object = Py.Import("reaktoro")
+            Dim reaktoro As Object
+            Try
+                reaktoro = Py.Import("reaktoro")
+            Catch ex As Exception
+                Throw New Exception("Reaktoro Python module/runtime was not found. Install or bundle a compatible Reaktoro runtime and configure DWSIM's Python path before calculating Reaktoro activity coefficients.", ex)
+            End Try
             Dim np As Object = Py.Import("numpy")
 
             'Initialize a thermodynamic database
